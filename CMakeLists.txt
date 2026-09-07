@@ -25,10 +25,13 @@ FetchContent_MakeAvailable(raylib enet)
 
 add_executable(MultiplayerClient
         client/main.cpp
+        client/ClientNetwork.cpp
 )
 
 add_executable(MultiplayerServer
         server/main.cpp
+        server/ServerNetwork.cpp
+        server/ServerNetwork.h
 )
 
 target_include_directories(MultiplayerClient PRIVATE
