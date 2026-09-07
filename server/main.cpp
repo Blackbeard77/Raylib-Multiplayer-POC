@@ -1,5 +1,6 @@
 #include <iostream>
 #include <enet/enet.h>
+#include "NetworkProtocol.h"
 
 int main()
 {
@@ -37,6 +38,8 @@ int main()
 
     ENetEvent event{};
 
+    std::uint32_t nextPlayerId = 1;
+
     // Keep processing network events while the server is running.
     while (true)
     {
@@ -44,7 +47,23 @@ int main()
         {
             if (event.type == ENET_EVENT_TYPE_CONNECT)
             {
-                std::cout << "[SERVER] Client connected.\n";
+                const std::uint32_t playerId = nextPlayerId++;
+
+                std::cout
+                    << "[SERVER] Client connected. Assigned Player ID: "
+                    << playerId
+                    << '\n';
+
+                WelcomePacket welcome{};
+                welcome.playerId = playerId;
+
+                ENetPacket* packet = enet_packet_create(
+                    &welcome,
+                    sizeof(welcome),
+                    ENET_PACKET_FLAG_RELIABLE
+                );
+
+                enet_peer_send(event.peer, 0, packet);
             }
         }
     }

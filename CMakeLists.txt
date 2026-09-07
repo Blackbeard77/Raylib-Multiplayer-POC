@@ -33,10 +33,12 @@ add_executable(MultiplayerServer
 
 target_include_directories(MultiplayerClient PRIVATE
         ${enet_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/shared
 )
 
 target_include_directories(MultiplayerServer PRIVATE
         ${enet_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/shared
 )
 
 target_link_libraries(MultiplayerClient PRIVATE raylib enet)

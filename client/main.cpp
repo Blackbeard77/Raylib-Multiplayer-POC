@@ -6,8 +6,9 @@
 
 #include <enet/enet.h>
 #include "raylib.h"
-int main()
-{
+#include "NetworkProtocol.h"
+
+int main() {
     constexpr int screenWidth = 1280;
     constexpr int screenHeight = 720;
 
@@ -15,8 +16,7 @@ int main()
     SetTargetFPS(60);
 
     // ENet must be initialized before creating any network host.
-    if (enet_initialize() != 0)
-    {
+    if (enet_initialize() != 0) {
         CloseWindow();
         return 1;
     }
@@ -25,7 +25,7 @@ int main()
     // - nullptr because we are not listening on a specific local address
     // - 1 outgoing connection
     // - 2 communication channels
-    ENetHost* client = enet_host_create(
+    ENetHost *client = enet_host_create(
         nullptr,
         1,
         2,
@@ -33,8 +33,7 @@ int main()
         0
     );
 
-    if (client == nullptr)
-    {
+    if (client == nullptr) {
         enet_deinitialize();
         CloseWindow();
         return 1;
@@ -46,25 +45,38 @@ int main()
     enet_address_set_host(&serverAddress, "127.0.0.1");
     serverAddress.port = 7777;
 
-    ENetPeer* serverPeer = enet_host_connect(
+    ENetPeer *serverPeer = enet_host_connect(
         client,
         &serverAddress,
         2,
         0
     );
 
+    std::uint32_t playerId = 0;
+
     bool connected = false;
 
-    while (!WindowShouldClose())
-    {
+    while (!WindowShouldClose()) {
         ENetEvent event{};
 
         // Poll network events without blocking the game loop.
-        while (enet_host_service(client, &event, 0) > 0)
-        {
-            if (event.type == ENET_EVENT_TYPE_CONNECT)
-            {
+        while (enet_host_service(client, &event, 0) > 0) {
+            if (event.type == ENET_EVENT_TYPE_CONNECT) {
                 connected = true;
+            }
+            if (event.type == ENET_EVENT_TYPE_RECEIVE) {
+                // Make sure the packet is large enough before interpreting its bytes.
+                if (event.packet->dataLength >= sizeof(WelcomePacket)) {
+                    const auto *welcome =
+                            reinterpret_cast<const WelcomePacket *>(event.packet->data);
+
+                    if (welcome->type == PacketType::Welcome) {
+                        playerId = welcome->playerId;
+                    }
+                }
+
+                // ENet owns received packets until we explicitly release them.
+                enet_packet_destroy(event.packet);
             }
         }
 
@@ -80,11 +92,18 @@ int main()
             connected ? GREEN : YELLOW
         );
 
+        DrawText(
+            TextFormat("PLAYER ID: %u", playerId),
+            40,
+            90,
+            20,
+            RAYWHITE
+        );
+
         EndDrawing();
     }
 
-    if (serverPeer != nullptr)
-    {
+    if (serverPeer != nullptr) {
         enet_peer_disconnect(serverPeer, 0);
     }
 
