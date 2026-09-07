@@ -63,6 +63,8 @@ void ServerNetwork::Update()
             case ENET_EVENT_TYPE_CONNECT:
             {
                 const std::uint32_t playerId = nextPlayerId++;
+                playerIds[event.peer] = playerId;
+                game.AddPlayer(playerId);
 
                 std::cout
                     << "[SERVER] Client connected. Assigned Player ID: "
@@ -85,7 +87,40 @@ void ServerNetwork::Update()
 
             case ENET_EVENT_TYPE_RECEIVE:
             {
-                // We will handle gameplay packets here next.
+                if (event.packet->dataLength >= sizeof(PacketType))
+                {
+                    const auto packetType =
+                        *reinterpret_cast<const PacketType*>(
+                            event.packet->data
+                        );
+
+                    if (packetType == PacketType::PlayerInput &&
+                        event.packet->dataLength >= sizeof(PlayerInputPacket))
+                    {
+                        const auto* input =
+                            reinterpret_cast<const PlayerInputPacket*>(
+                                event.packet->data
+                            );
+
+                        const auto playerIt =
+                            playerIds.find(event.peer);
+
+                        if (playerIt != playerIds.end())
+                        {
+                            // Pass player's input into the authorative game simulation.
+                            game.ApplyInput(playerIt->second, *input);
+                            std::cout
+                                << "[SERVER] Player "
+                                << playerIt->second
+                                << " Input:"
+                                << " W=" << input->up
+                                << " S=" << input->down
+                                << " A=" << input->left
+                                << " D=" << input->right
+                                << '\n';
+                        }
+                    }
+                }
 
                 enet_packet_destroy(event.packet);
                 break;
@@ -93,7 +128,21 @@ void ServerNetwork::Update()
 
             case ENET_EVENT_TYPE_DISCONNECT:
             {
-                std::cout << "[SERVER] Client disconnected.\n";
+                const auto playerIt =
+                    playerIds.find(event.peer);
+
+                if (playerIt != playerIds.end())
+                {
+                    std::cout
+                        << "[SERVER] Player "
+                        << playerIt->second
+                        << " disconnected.\n";
+
+                    // Remove the player's authoritative state before forgetting the connection.
+                    game.RemovePlayer(playerIt->second);
+                    playerIds.erase(playerIt);
+                }
+
                 break;
             }
 

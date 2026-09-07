@@ -32,6 +32,8 @@ add_executable(MultiplayerServer
         server/main.cpp
         server/ServerNetwork.cpp
         server/ServerNetwork.h
+        server/ServerGame.cpp
+        server/ServerGame.h
 )
 
 target_include_directories(MultiplayerClient PRIVATE

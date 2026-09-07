@@ -7,8 +7,8 @@
 #define NOUSER
 
 #include <enet/enet.h>
-
 #include "NetworkProtocol.h"
+#include <unordered_map>
 
 class ClientNetwork
 {
@@ -26,6 +26,7 @@ public:
 private:
     ENetHost* client = nullptr;
     ENetPeer* serverPeer = nullptr;
+    std::unordered_map<ENetPeer*, std::uint32_t> playerIds;
 
     bool connected = false;
     std::uint32_t playerId = 0;
