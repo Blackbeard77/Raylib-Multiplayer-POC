@@ -35,8 +35,19 @@ int main()
 
     std::cout << "[SERVER] Listening on port 7777.\n";
 
-    // Keep the server alive for now.
-    std::cin.get();
+    ENetEvent event{};
+
+    // Keep processing network events while the server is running.
+    while (true)
+    {
+        while (enet_host_service(server, &event, 1000) > 0)
+        {
+            if (event.type == ENET_EVENT_TYPE_CONNECT)
+            {
+                std::cout << "[SERVER] Client connected.\n";
+            }
+        }
+    }
 
     enet_host_destroy(server);
     enet_deinitialize();
